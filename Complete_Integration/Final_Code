@@ -1,0 +1,96 @@
+#include <Servo.h> 
+int encoderPin1 = 3;
+int encoderPin2 = 2;
+int redPin = 5;
+int bluPin = 6;
+int grnPin = 9;
+int numberToDisplay;
+Servo myservo;
+
+volatile int lastEncoded = 0;
+volatile long encoderValue = 0;
+
+long lastencoderValue = 0;
+
+int val; 
+
+const int latchPin = 12;
+const int clockPin = 11;
+const int dataPin = 8;
+
+int lastMSB = 0;
+int lastLSB = 0;
+
+void setup() {
+  
+  myservo.attach(4);
+
+  pinMode(latchPin, OUTPUT);
+  pinMode(dataPin, OUTPUT);  
+  pinMode(clockPin, OUTPUT);
+
+  pinMode(encoderPin1, INPUT); 
+  pinMode(encoderPin2, INPUT);
+  pinMode(5, OUTPUT);
+  pinMode(6, OUTPUT);
+  pinMode(9, OUTPUT);
+  digitalWrite(encoderPin1, HIGH);
+  digitalWrite(encoderPin2, HIGH);
+
+  attachInterrupt(0, updateEncoder, CHANGE); 
+  attachInterrupt(1, updateEncoder, CHANGE);
+  
+  pinMode(latchPin, OUTPUT);
+  pinMode(clockPin, OUTPUT);
+  pinMode(dataPin, OUTPUT);
+
+}
+
+void loop(){ 
+  val = encoderValue*(3.75*2);
+  if(val<-15) 
+  {
+  myservo.write(90+val);
+  numberToDisplay=map(val,-90,90,0,255); 
+  digitalWrite(latchPin, LOW);
+  shiftOut(dataPin, clockPin, MSBFIRST, numberToDisplay);  
+  digitalWrite(latchPin, HIGH);
+  digitalWrite(5, HIGH);
+  delay(50);
+  }
+  
+  if(val<15 and val>-15) 
+  {
+  myservo.write(105);
+  numberToDisplay=(0); 
+  digitalWrite(latchPin, LOW);
+  shiftOut(dataPin, clockPin, MSBFIRST, numberToDisplay);  
+  digitalWrite(latchPin, HIGH);
+  digitalWrite(5, LOW);
+  delay(15);
+  }
+ 
+  if(val>15) 
+  {
+  myservo.write(90+val);
+  numberToDisplay=map(val,-90,90,0,255); 
+  digitalWrite(latchPin, LOW);
+  shiftOut(dataPin, clockPin, MSBFIRST, numberToDisplay);  
+  digitalWrite(latchPin, HIGH);
+  digitalWrite(5, HIGH);
+  delay(50); 
+  }
+}
+
+void updateEncoder(){
+  int MSB = digitalRead(encoderPin1);
+  int LSB = digitalRead(encoderPin2);
+
+  int encoded = (MSB << 1) |LSB;
+  int sum  = (lastEncoded << 2) | encoded;
+
+  if(sum == 0b1101 || sum == 0b0100 || sum == 0b0010 || sum == 0b1011) encoderValue ++;
+  if(sum == 0b1110 || sum == 0b0111 || sum == 0b0001 || sum == 0b1000) encoderValue --;
+
+  lastEncoded = encoded;
+}
